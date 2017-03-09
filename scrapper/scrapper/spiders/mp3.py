@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import scrapy
+from ..items import ArtistItem, SongItem
 from pymaybe import maybe
 
 
@@ -24,8 +25,15 @@ class Mp3Spider(scrapy.Spider):
         def extract_with_css(query):
             return maybe(response.css(query).extract_first()).strip()
 
-        yield {
-            'name': extract_with_css('div.box.artist.artist-page-padding-top > h1::text'),
-            'genres': extract_with_css('div.artist-meta-info > div.tags::text'),
-            'music': response.css('ol.top_tracks > li > a::text').extract(),
-        }
+        artist = ArtistItem()
+        artist['name'] = extract_with_css('div.box.artist.artist-page-padding-top > h1::text')
+        artist['genre'] = extract_with_css('div.artist-meta-info > div.tags::text')
+
+        yield artist
+
+        for song_data in response.css('ol.top_tracks > li'):
+            song = SongItem()
+            song['artist'] = artist['name']
+            song['name'] = song_data.css('a::text').extract()
+            song['url'] = song_data.css('a::attr(href)').extract()
+            yield song

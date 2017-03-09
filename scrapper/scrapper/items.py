@@ -12,3 +12,14 @@ class ScrapperItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
+
+
+class ArtistItem(scrapy.Item):
+    name = scrapy.Field()
+    genre = scrapy.Field()
+
+
+class SongItem(scrapy.Item):
+    artist = scrapy.Field()
+    name = scrapy.Field()
+    url = scrapy.Field()
