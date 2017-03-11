@@ -21,16 +21,18 @@ class GenreItem(Item):
     descripcion = Field()
 
 
+class GenreArtistItem(Item):
+    genre = Field()
+    artist = Field()
+
+
 class ArtistItem(Item):
     name = Field()
     imagen = Field()
     bio = Field()
 
 
-class ArtistAlbumItem(Item):
-    artist = Field()
-    album = Field()
-
-
 class AlbumItem(Item):
     name = Field()
+    year = Field()
+    artist = Field()

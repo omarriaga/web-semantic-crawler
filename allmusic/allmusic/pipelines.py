@@ -22,7 +22,7 @@ CSVDir = '/Users/juan/dumps/'
 
 
 class MultiCSVItemPipeline(object):
-    SaveTypes = ['artist', 'song', 'genre']
+    SaveTypes = ['genre']
 
     def __init__(self):
         self.files = dict([(name, open(CSVDir + name + '.csv', 'w+b')) for name in self.SaveTypes])
