@@ -33,14 +33,20 @@ class AllmusicSpider(scrapy.Spider):
         genre['descripcion'] = extract_with_css('p.description::text', response)
         yield genre
 
-        url_artist = extract_with_css('ul.tabs > li.tab.artist > a::attr(href)', response)
-
-        yield Request(self.domain + url_artist, headers=self.headers, callback=self.parse_genre_artist,
-                      meta={'genre': genre['name']})
+        url_artist = extract_with_css('ul.tabs > li.tab.artists > a::attr(href)', response)
+        if url_artist is not None:
+            yield Request(self.domain + url_artist, headers=self.headers, callback=self.parse_genre_artist,
+                          meta={'genre': genre['name']})
 
         url_albums = extract_with_css('ul.tabs > li.tab.albums > a::attr(href)', response)
-        yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_genre_artist,
-                      meta={'genre': genre['name']})
+        if url_albums is not None:
+            yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_genre_album,
+                          meta={'genre': genre['name']})
+
+        url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
+        if url_songs is not None:
+            yield Request(self.domain + url_songs, headers=self.headers, callback=self.parse_genre_song,
+                          meta={'genre': genre['name']})
 
     def parse_genre_artist(self, response):
         genre = response.meta['genre']
@@ -54,7 +60,9 @@ class AllmusicSpider(scrapy.Spider):
             artist['name'] = genre_artist['artist']
             artist['imagen'] = extract_with_css('a > div.cropped-image.crop-image-borders > img::attr(src)', artist)
             url = extract_with_css('a::attr(href)', artist)
-            yield Request(self.domain + url, headers=self.headers, callback=self.parse_artist, meta={'artist': artist})
+            if url is not None:
+                yield Request(self.domain + url, headers=self.headers, callback=self.parse_artist,
+                              meta={'artist': artist})
 
     def parse_artist(self, response):
         artist = response.meta['artist']
@@ -68,15 +76,18 @@ class AllmusicSpider(scrapy.Spider):
             yield genre_artist
 
         url_bio = extract_with_css('ul.tabs > li.tab.biography > a::attr(href)', response)
-        yield Request(self.domain + url_bio, headers=self.headers, callback=self.get_bio, meta={'artist': artist})
+        if url_bio is not None:
+            yield Request(self.domain + url_bio, headers=self.headers, callback=self.get_bio, meta={'artist': artist})
 
         url_albums = extract_with_css('ul.tabs > li.tab.discography > a::attr(href)', response)
-        yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_album,
-                      meta={'artist': artist['name']})
+        if url_albums is not None:
+            yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_album,
+                          meta={'artist': artist['name']})
 
         url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
-        yield Request(self.domain + url_songs + '/all', headers=self.headers, callback=self.parse_song(),
-                      meta={'artist': artist['name']})
+        if url_songs is not None:
+            yield Request(self.domain + url_songs + '/all', headers=self.headers, callback=self.parse_song,
+                          meta={'artist': artist['name']})
 
     def get_bio(self, response):
         artist = response.meta['artist']
@@ -99,8 +110,14 @@ class AllmusicSpider(scrapy.Spider):
             song_item['artist'] = artist
             song_item['name'] = extract_with_css('td.title-composer > div.title > a::text', song)
             url_song = extract_with_css('td.title-composer > div.title > a::attr(href)', song)
-            yield Request(self.domain + url_song, headers=self.headers, callback=self.parse_song(),
-                          meta={'song': song_item})
+            if url_song is not None:
+                yield Request(self.domain + url_song, headers=self.headers, callback=self.get_album,
+                              meta={'song': song_item})
+
+        url_next = extract_with_css('section.all-songs > div.pagination > span.next > a::attr(href)', response)
+        if url_next is not None:
+            yield Request(self.domain + url_next, headers=self.headers, callback=self.parse_song,
+                          meta={'artist': artist})
 
     def get_album(self, response):
         song = response.meta['song']
