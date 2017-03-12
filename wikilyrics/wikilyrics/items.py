@@ -18,7 +18,7 @@ class ArtistItem(scrapy.Item):
     name = scrapy.Field()
     country = scrapy.Field()
     state = scrapy.Field()
-    city =scrapy.Field()
+    city = scrapy.Field()
 
 
 class SongItem(scrapy.Item):
@@ -26,48 +26,48 @@ class SongItem(scrapy.Item):
     name = scrapy.Field()
     urlYouTube = scrapy.Field()
     letra = scrapy.Field()
-    album= scrapy.Field()
-    musicBy=scrapy.Field()
-    letraBy=scrapy.Field()
+    album = scrapy.Field()
+    musicBy = scrapy.Field()
+    letraBy = scrapy.Field()
 
 
 class GenreItem(scrapy.Item):
-    name=scrapy.Field()
-    stylisticOrigins=scrapy.Field()
-    instrumentsUsed=scrapy.Field()
-    description=scrapy.Field()
+    name = scrapy.Field()
+    stylisticOrigins = scrapy.Field()
+    instrumentsUsed = scrapy.Field()
+    description = scrapy.Field()
 
 
 class AlbumItem(scrapy.Item):
-    name=scrapy.Field()
-    year=scrapy.Field()
-    length=scrapy.Field()
-    genre=scrapy.Field()
-    urlWikipedia=scrapy.Field()
-    imagen=scrapy.Field()
+    name = scrapy.Field()
+    year = scrapy.Field()
+    length = scrapy.Field()
+    genre = scrapy.Field()
+    urlWikipedia = scrapy.Field()
+    imagen = scrapy.Field()
 
 
 class RecoveryLabelItem(scrapy.Item):
-    name=scrapy.Field()
-    description=scrapy.Field()
-    imagen=scrapy.Field()
+    name = scrapy.Field()
+    description = scrapy.Field()
+    imagen = scrapy.Field()
 
 
 class ArtistAlbumItem(scrapy.Item):
-    artist=scrapy.Field()
-    album=scrapy.Field()
+    artist = scrapy.Field()
+    album = scrapy.Field()
 
 
 class SongAlbumItem(scrapy.Item):
-    song=scrapy.Field()
-    album=scrapy.Field()
+    song = scrapy.Field()
+    album = scrapy.Field()
 
 
 class ArtistGenreItem(scrapy.Item):
-    artist=scrapy.Field()
-    genre=scrapy.Field()
+    artist = scrapy.Field()
+    genre = scrapy.Field()
 
 
 class RecoveryLabelArtistItem(scrapy.Item):
-    recoveryLabel=scrapy.Field()
-    artist=scrapy.Field()
+    recoveryLabel = scrapy.Field()
+    artist = scrapy.Field()
