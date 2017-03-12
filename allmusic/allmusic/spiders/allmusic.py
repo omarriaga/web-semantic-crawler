@@ -11,7 +11,7 @@ def extract_with_css(query, response):
 
 class AllmusicSpider(scrapy.Spider):
     name = "allmusic"
-    domain = "http://www.allmusic.com/"
+    domain = 'http://www.allmusic.com'
     allowed_domains = ["www.allmusic.com"]
     start_urls = ['http://www.allmusic.com/genres']
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48.0'}
@@ -23,7 +23,7 @@ class AllmusicSpider(scrapy.Spider):
     def parse(self, response):
         for genre in response.css('div.genres > div.genre'):
             genre_item = GenreItem()
-            genre_item['imagen'] = extract_with_css('a.genre-image > img::attr(src)', genre)
+            genre_item['imagen'] = self.domain + extract_with_css('a.genre-image > img::attr(src)', genre)
             url = genre.css('a.genre-image::attr(href)').extract_first()
             yield Request(url, headers=self.headers, callback=self.parse_genre, meta={'genre': genre_item})
 
@@ -33,19 +33,20 @@ class AllmusicSpider(scrapy.Spider):
         genre['descripcion'] = extract_with_css('p.description::text', response)
         yield genre
 
-        url_artist = extract_with_css('ul.tabs > li.tab.artists > a::attr(href)', response)
+        url_artist = self.domain + extract_with_css('ul.tabs > li.tab.artists > a::attr(href)', response)
+        print('url_artist ' + str(url_artist) + ' type ' + type(url_artist).__name__)
         if url_artist is not None:
-            yield Request(self.domain + url_artist, headers=self.headers, callback=self.parse_genre_artist,
+            yield Request(str(url_artist), headers=self.headers, callback=self.parse_genre_artist,
                           meta={'genre': genre['name']})
 
         url_albums = extract_with_css('ul.tabs > li.tab.albums > a::attr(href)', response)
         if url_albums is not None:
-            yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_genre_album,
+            yield Request(str(self.domain + url_albums), headers=self.headers, callback=self.parse_genre_album,
                           meta={'genre': genre['name']})
 
         url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
         if url_songs is not None:
-            yield Request(self.domain + url_songs, headers=self.headers, callback=self.parse_genre_song,
+            yield Request(str(self.domain + url_songs), headers=self.headers, callback=self.parse_genre_song,
                           meta={'genre': genre['name']})
 
     def parse_genre_artist(self, response):
@@ -56,13 +57,14 @@ class AllmusicSpider(scrapy.Spider):
             genre_artist['artist'] = extract_with_css('a > div.info > div.artist::text', artist)
             yield genre_artist
             # ir por el perfil de artista
-            artist = ArtistItem()
-            artist['name'] = genre_artist['artist']
-            artist['imagen'] = extract_with_css('a > div.cropped-image.crop-image-borders > img::attr(src)', artist)
+            artist_item = ArtistItem()
+            artist_item['name'] = genre_artist['artist']
+            artist_item['image'] = self.domain + artist.css('a > div.cropped-image.crop-image-borders > img::src')\
+                .extract_first()
             url = extract_with_css('a::attr(href)', artist)
             if url is not None:
-                yield Request(self.domain + url, headers=self.headers, callback=self.parse_artist,
-                              meta={'artist': artist})
+                yield Request(str(self.domain + url), headers=self.headers, callback=self.parse_artist,
+                              meta={'artist': artist_item})
 
     def parse_artist(self, response):
         artist = response.meta['artist']
@@ -77,16 +79,16 @@ class AllmusicSpider(scrapy.Spider):
 
         url_bio = extract_with_css('ul.tabs > li.tab.biography > a::attr(href)', response)
         if url_bio is not None:
-            yield Request(self.domain + url_bio, headers=self.headers, callback=self.get_bio, meta={'artist': artist})
+            yield Request(str(self.domain + url_bio), headers=self.headers, callback=self.get_bio, meta={'artist': artist})
 
         url_albums = extract_with_css('ul.tabs > li.tab.discography > a::attr(href)', response)
         if url_albums is not None:
-            yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_album,
+            yield Request(str(self.domain + url_albums), headers=self.headers, callback=self.parse_album,
                           meta={'artist': artist['name']})
 
         url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
         if url_songs is not None:
-            yield Request(self.domain + url_songs + '/all', headers=self.headers, callback=self.parse_song,
+            yield Request(str(self.domain + url_songs) + '/all', headers=self.headers, callback=self.parse_song,
                           meta={'artist': artist['name']})
 
     def get_bio(self, response):
@@ -111,12 +113,12 @@ class AllmusicSpider(scrapy.Spider):
             song_item['name'] = extract_with_css('td.title-composer > div.title > a::text', song)
             url_song = extract_with_css('td.title-composer > div.title > a::attr(href)', song)
             if url_song is not None:
-                yield Request(self.domain + url_song, headers=self.headers, callback=self.get_album,
+                yield Request(str(self.domain + url_song), headers=self.headers, callback=self.get_album,
                               meta={'song': song_item})
 
         url_next = extract_with_css('section.all-songs > div.pagination > span.next > a::attr(href)', response)
         if url_next is not None:
-            yield Request(self.domain + url_next, headers=self.headers, callback=self.parse_song,
+            yield Request(str(self.domain + url_next), headers=self.headers, callback=self.parse_song,
                           meta={'artist': artist})
 
     def get_album(self, response):
@@ -130,7 +132,7 @@ class AllmusicSpider(scrapy.Spider):
         for album in response.css('section.album-highlights > div.album-highlights-container > div'):
             album_genre = AlbumGenreItem()
             album_genre['genre'] = genre
-            album_genre['album'] = extract_with_css('a > div.info > div.title', album)
+            album_genre['album'] = extract_with_css('a > div.info > div.title::text', album)
             yield album_genre
 
     def parse_genre_song(self, response):

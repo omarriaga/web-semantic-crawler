@@ -38,7 +38,7 @@ class SongGenreItem(Item):
 
 class ArtistItem(Item):
     name = Field()
-    imagen = Field()
+    image = Field()
     bio = Field()
     born = Field()
     active = Field()
