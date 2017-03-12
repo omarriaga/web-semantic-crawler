@@ -26,13 +26,31 @@ class GenreArtistItem(Item):
     artist = Field()
 
 
+class AlbumGenreItem(Item):
+    genre = Field()
+    album = Field()
+
+
+class SongGenreItem(Item):
+    genre = Field()
+    song = Field()
+
+
 class ArtistItem(Item):
     name = Field()
-    imagen = Field()
+    image = Field()
     bio = Field()
+    born = Field()
+    active = Field()
 
 
 class AlbumItem(Item):
     name = Field()
     year = Field()
     artist = Field()
+
+
+class SongItem(Item):
+    name = Field()
+    artist = Field()
+    album = Field()

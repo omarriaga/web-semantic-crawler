@@ -18,11 +18,11 @@ def item_type(item):
     return type(item).__name__.replace('Item', '').lower()  # TeamItem => team
 
 
-CSVDir = '/Users/juan/dumps/'
+CSVDir = '/Users/juan/dumps/allmusic/'
 
 
 class MultiCSVItemPipeline(object):
-    SaveTypes = ['genre']
+    SaveTypes = ['genre', 'genreartist', 'albumgenre', 'songgenre', 'artist', 'album', 'song']
 
     def __init__(self):
         self.files = dict([(name, open(CSVDir + name + '.csv', 'w+b')) for name in self.SaveTypes])
