@@ -2,7 +2,7 @@
 import scrapy
 from scrapy import Request
 from pymaybe import maybe
-from ..items import GenreItem, GenreArtistItem
+from ..items import GenreItem, GenreArtistItem, ArtistItem, AlbumItem, SongItem, AlbumGenreItem, SongGenreItem
 
 
 def extract_with_css(query, response):
@@ -11,6 +11,7 @@ def extract_with_css(query, response):
 
 class AllmusicSpider(scrapy.Spider):
     name = "allmusic"
+    domain = "http://www.allmusic.com/"
     allowed_domains = ["www.allmusic.com"]
     start_urls = ['http://www.allmusic.com/genres']
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48.0'}
@@ -31,3 +32,94 @@ class AllmusicSpider(scrapy.Spider):
         genre['name'] = extract_with_css('h1.genre-name.headline::text', response)
         genre['descripcion'] = extract_with_css('p.description::text', response)
         yield genre
+
+        url_artist = extract_with_css('ul.tabs > li.tab.artist > a::attr(href)', response)
+
+        yield Request(self.domain + url_artist, headers=self.headers, callback=self.parse_genre_artist,
+                      meta={'genre': genre['name']})
+
+        url_albums = extract_with_css('ul.tabs > li.tab.albums > a::attr(href)', response)
+        yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_genre_artist,
+                      meta={'genre': genre['name']})
+
+    def parse_genre_artist(self, response):
+        genre = response.meta['genre']
+        for artist in response.css('div.artist-highlights-container > div'):
+            genre_artist = GenreArtistItem()
+            genre_artist['genre'] = genre
+            genre_artist['artist'] = extract_with_css('a > div.info > div.artist::text', artist)
+            yield genre_artist
+            # ir por el perfil de artista
+            artist = ArtistItem()
+            artist['name'] = genre_artist['artist']
+            artist['imagen'] = extract_with_css('a > div.cropped-image.crop-image-borders > img::attr(src)', artist)
+            url = extract_with_css('a::attr(href)', artist)
+            yield Request(self.domain + url, headers=self.headers, callback=self.parse_artist, meta={'artist': artist})
+
+    def parse_artist(self, response):
+        artist = response.meta['artist']
+        artist['born'] = response.css('div.sidebar > section.basic-info > div.birth > div::text').extract_first()
+        artist['active'] = response.css(
+            'div.sidebar > section.basic-info > div.active-dates > div::text').extract_first()
+        for genre in response.css('div.sidebar > section.basic-info > div.genre > div > a'):
+            genre_artist = GenreArtistItem()
+            genre_artist['genre'] = extract_with_css('a::text', genre)
+            genre_artist['artist'] = artist['name']
+            yield genre_artist
+
+        url_bio = extract_with_css('ul.tabs > li.tab.biography > a::attr(href)', response)
+        yield Request(self.domain + url_bio, headers=self.headers, callback=self.get_bio, meta={'artist': artist})
+
+        url_albums = extract_with_css('ul.tabs > li.tab.discography > a::attr(href)', response)
+        yield Request(self.domain + url_albums, headers=self.headers, callback=self.parse_album,
+                      meta={'artist': artist['name']})
+
+        url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
+        yield Request(self.domain + url_songs + '/all', headers=self.headers, callback=self.parse_song(),
+                      meta={'artist': artist['name']})
+
+    def get_bio(self, response):
+        artist = response.meta['artist']
+        artist['bio'] = extract_with_css('section.biography > div.text > p::text', response)
+        yield artist
+
+    def parse_album(self, response):
+        artist = response.meta['artist']
+        for album in response.css('section.discography > table > tbody > tr'):
+            album_item = AlbumItem()
+            album_item['artist'] = artist
+            album_item['name'] = extract_with_css('td.title::text', album)
+            album_item['year'] = extract_with_css('td.year::text', album)
+            yield album_item
+
+    def parse_song(self, response):
+        artist = response.meta['artist']
+        for song in response.css('section.all-songs > table > tbody > tr'):
+            song_item = SongItem()
+            song_item['artist'] = artist
+            song_item['name'] = extract_with_css('td.title-composer > div.title > a::text', song)
+            url_song = extract_with_css('td.title-composer > div.title > a::attr(href)', song)
+            yield Request(self.domain + url_song, headers=self.headers, callback=self.parse_song(),
+                          meta={'song': song_item})
+
+    def get_album(self, response):
+        song = response.meta['song']
+        song['album'] = extract_with_css(
+            'section.appearances > table > tbody > tr > td.artist-album > div.title > a::text', response)
+        yield song
+
+    def parse_genre_album(self, response):
+        genre = response.meta['genre']
+        for album in response.css('section.album-highlights > div.album-highlights-container > div'):
+            album_genre = AlbumGenreItem()
+            album_genre['genre'] = genre
+            album_genre['album'] = extract_with_css('a > div.info > div.title', album)
+            yield album_genre
+
+    def parse_genre_song(self, response):
+        genre = response.meta['genre']
+        for song in response.css('section.song-highlights > table > tbody > tr'):
+            song_genre = SongGenreItem()
+            song_genre['genre'] = genre
+            song_genre['song'] = extract_with_css('td.title > a::text', song)
+            yield song_genre
