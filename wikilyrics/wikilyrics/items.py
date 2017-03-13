@@ -45,6 +45,7 @@ class AlbumItem(scrapy.Item):
     genre = scrapy.Field()
     urlWikipedia = scrapy.Field()
     imagen = scrapy.Field()
+    artist = scrapy.Field()
 
 
 class RecoveryLabelItem(scrapy.Item):
