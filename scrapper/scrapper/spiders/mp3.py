@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from ..items import ArtistItem, SongItem
-from pymaybe import maybe
+from ..items import ArtistItem, SongItem, GenreItem
+import html2text
 
 
 class Mp3Spider(scrapy.Spider):
@@ -22,18 +22,21 @@ class Mp3Spider(scrapy.Spider):
             yield scrapy.Request(next_page, callback=self.parse)
 
     def parse_artist(self, response):
-        def extract_with_css(query):
-            return maybe(response.css(query).extract_first()).strip()
-
         artist = ArtistItem()
-        artist['name'] = extract_with_css('div.box.artist.artist-page-padding-top > h1::text')
-        artist['genre'] = extract_with_css('div.artist-meta-info > div.tags::text')
+        h = html2text.HTML2Text()
+        artist['bio'] = h.handle(' '.join(response.css('div.bio').extract()))
+        artist['name'] = response.css('div.box.artist.artist-page-padding-top > h1::text').extract_first()
+        for genre in response.css('div.artist-meta-info > div.tags > span.artist-meta-tags a::text').extract():
+            genre_item = GenreItem()
+            genre_item['artist'] = artist['name']
+            genre_item['genre'] = genre
+            yield genre_item
 
         yield artist
 
         for song_data in response.css('ol.top_tracks > li'):
             song = SongItem()
             song['artist'] = artist['name']
-            song['name'] = song_data.css('a::text').extract()
-            song['url'] = song_data.css('a::attr(href)').extract()
+            song['name'] = song_data.css('a::text').extract_first()
+            song['url'] = song_data.css('a::attr(href)').extract_first()
             yield song

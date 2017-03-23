@@ -16,10 +16,15 @@ class ScrapperItem(scrapy.Item):
 
 class ArtistItem(scrapy.Item):
     name = scrapy.Field()
-    genre = scrapy.Field()
+    bio = scrapy.Field()
 
 
 class SongItem(scrapy.Item):
     artist = scrapy.Field()
     name = scrapy.Field()
     url = scrapy.Field()
+
+
+class GenreItem(scrapy.Item):
+    artist = scrapy.Field()
+    genre = scrapy.Field()
