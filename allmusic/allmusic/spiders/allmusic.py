@@ -2,6 +2,7 @@
 import scrapy
 from scrapy import Request
 from pymaybe import maybe
+import html2text
 from ..items import GenreItem, GenreArtistItem, ArtistItem, AlbumItem, SongItem, AlbumGenreItem, SongGenreItem
 
 
@@ -59,7 +60,7 @@ class AllmusicSpider(scrapy.Spider):
             # ir por el perfil de artista
             artist_item = ArtistItem()
             artist_item['name'] = genre_artist['artist']
-            url = extract_with_css('a::attr(href)', artist)
+            url = artist.css('a::attr(href)')
             if url is not None:
                 yield Request(str(self.domain + url), headers=self.headers, callback=self.parse_artist,
                               meta={'artist': artist_item})
@@ -86,14 +87,16 @@ class AllmusicSpider(scrapy.Spider):
             yield Request(str(self.domain + url_albums), headers=self.headers, callback=self.parse_album,
                           meta={'artist': artist['name']})
 
-        url_songs = extract_with_css('ul.tabs > li.tab.songs > a::attr(href)', response)
+        url_songs = response.css('ul.tabs > li.tab.songs > a::attr(href)').extract_first()
         if url_songs is not None:
             yield Request(str(self.domain + url_songs + '/all'), headers=self.headers, callback=self.parse_song,
                           meta={'artist': artist['name']})
 
     def get_bio(self, response):
         artist = response.meta['artist']
-        artist['bio'] = extract_with_css('section.biography > div.text > p::text', response)
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        artist['bio'] = h.handle(' '.join(response.css('section.biography > div.text > p::text').extract()))
         yield artist
 
     def parse_album(self, response):
@@ -107,28 +110,29 @@ class AllmusicSpider(scrapy.Spider):
 
     def parse_song(self, response):
         artist = response.meta['artist']
+        h = html2text.HTML2Text()
+        h.ignore_links = True
         for song in response.css('section.all-songs > table > tbody > tr'):
             song_item = SongItem()
             song_item['artist'] = artist
-            song_item['name'] = extract_with_css('td.title-composer > div.title > a::text', song)
-            url_song = extract_with_css('td.title-composer > div.title > a::attr(href)', song)
+            song_item['name'] = h.handle(' '.join(song.css('td.title-composer > div.title').extract())).strip()
+            url_song = song.css('td.title-composer > div.title > a::attr(href)').extract_first()
             try:
-                yield Request(str(self.domain + url_song), headers=self.headers, callback=self.get_album,
-                              meta={'song': song_item})
+                yield Request(url_song, headers=self.headers, callback=self.get_album, meta={'song': song_item})
             except:
                 yield song_item
 
-        url_next = extract_with_css('section.all-songs > div.pagination > span.next > a::attr(href)', response)
+        url_next = response.css('section.all-songs > div.pagination > span.next > a::attr(href)').extract_first()
         try:
-            yield Request(str(self.domain + url_next), headers=self.headers, callback=self.parse_song,
+            yield Request(url_next, headers=self.headers, callback=self.parse_song,
                           meta={'artist': artist})
         except:
             print('no more next link')
 
     def get_album(self, response):
         song = response.meta['song']
-        song['album'] = extract_with_css(
-            'section.appearances > table > tbody > tr > td.artist-album > div.title > a::text', response)
+        song['album'] = response.css(
+            'section.appearances > table > tbody > tr > td.artist-album > div.title > a::text').extract_first()
         yield song
 
     def parse_genre_album(self, response):
@@ -141,8 +145,8 @@ class AllmusicSpider(scrapy.Spider):
 
     def parse_genre_song(self, response):
         genre = response.meta['genre']
-        for song in response.css('section.song-highlights > table > tbody > tr'):
+        for song in response.css('section.song-highlights > table  tr td.title'):
             song_genre = SongGenreItem()
             song_genre['genre'] = genre
-            song_genre['song'] = extract_with_css('td.title > a::text', song)
+            song_genre['song'] = song.css('a::text').extract_first()
             yield song_genre
