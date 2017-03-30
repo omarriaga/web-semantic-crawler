@@ -3,6 +3,7 @@ import scrapy
 from scrapy import Request
 from ..items import AlbumItem, ArtistItem, SongItem
 from pymaybe import maybe
+import html2text
 
 
 def extract_with_css(query, response):
@@ -45,10 +46,10 @@ class AlbumSpider(scrapy.Spider):
         artist = response.meta['artist']
         album = AlbumItem()
         album['artist'] = artist['name']
-        album['name'] = extract_with_css('div.plainlinks > div:first-child > b::text', response)
-        album['year'] = extract_with_css('div.plainlinks > table:nth-child(1n) > tbody > tr > td:last-child::text',
+        album['name'] = extract_with_css('div.plainlinks > div:first-child b::text', response)
+        album['year'] = extract_with_css('div.plainlinks > table:nth-child(1n) tr td:last-child::text',
                                          response)
-        album['length'] = extract_with_css('div.plainlinks > table:nth-child(2n) > tbody > tr > td:last-child::text',
+        album['length'] = extract_with_css('div.plainlinks > table:nth-child(2n) tr td:last-child::text',
                                            response)
         yield album
         for songs in response.css('div#mw-content-text > ol > li'):
@@ -59,16 +60,17 @@ class AlbumSpider(scrapy.Spider):
             url_song = songs.css('b > a::attr(href)').extract_first()
             if url_song is not None:
                 yield Request(str(self.domain + url_song), headers=self.headers, callback=self.parse_song,
-                              meta={'song': song })
+                              meta={'song': song})
             else:
                 yield song
 
     def parse_song(self, response):
         song = response.meta['song']
-        song['letra'] = extract_with_css('div.lyricbox::text', response)
-        song['urlYouTube'] = extract_with_css('div.ytp-title-text > a::attr(href)', response)
-        song['musicBy'] = extract_with_css('table.song-credit-box > tbody > tr:first-child > td:last-child::text',
-                                           response)
-        song['letraBy'] = extract_with_css('table.song-credit-box > tbody > tr:nth-child(2n) > td:last-child::text',
-                                           response)
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        song['letra'] = h.handle(' '.join(response.css('div.lyricbox::text').extract()))
+        song['musicBy'] = \
+            h.handle(' '.join(response.css('table.song-credit-box tr:first-child td:last-child::text').extract()))
+        song['letraBy'] = \
+            h.handle(' '.join(response.css('table.song-credit-box tr:nth-child(2n) td:last-child::text').extract()))
         yield song

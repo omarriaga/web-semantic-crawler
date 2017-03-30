@@ -19,7 +19,7 @@ def item_type(item):
 
 
 #CSVDir = '/Users/juan/dumps/allmusic/'
-CSVDir = 'C:\Users\oscar\Documents\MISIS\semantic web\\allmusic\\'
+CSVDir = '/home/ubuntu/websemantic/allmusic/'
 
 
 class MultiCSVItemPipeline(object):

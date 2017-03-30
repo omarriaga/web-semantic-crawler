@@ -60,7 +60,7 @@ class AllmusicSpider(scrapy.Spider):
             # ir por el perfil de artista
             artist_item = ArtistItem()
             artist_item['name'] = genre_artist['artist']
-            url = artist.css('a::attr(href)')
+            url = artist.css('a::attr(href)').extract_first()
             if url is not None:
                 yield Request(str(self.domain + url), headers=self.headers, callback=self.parse_artist,
                               meta={'artist': artist_item})

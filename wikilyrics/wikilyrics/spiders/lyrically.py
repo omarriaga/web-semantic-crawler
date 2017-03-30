@@ -3,6 +3,7 @@ import scrapy
 from scrapy import Request
 from ..items import GenreItem
 from pymaybe import maybe
+import html2text
 
 
 def extract_with_css(query, response):
@@ -41,6 +42,8 @@ class LyricallySpider(scrapy.Spider):
     def parse_genre(self, response):
         genre = response.meta['genre']
         genre['stylisticOrigins'] = extract_with_css('a.external.text::text', response)
-        genre['description'] = extract_with_css('div.mw-content-ltr.mw-content-text > table > tbody > tr:first-child '
-                                                '> td:last-child::text', response)
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        genre['description'] = h.handle(' '.join(response.css(
+            'div.mw-content-ltr.mw-content-text > table tr:first-child td:last-child::text').extract()))
         yield genre

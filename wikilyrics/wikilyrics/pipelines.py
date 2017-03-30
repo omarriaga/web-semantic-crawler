@@ -21,7 +21,7 @@ def item_type(item):
     return type(item).__name__.replace('Item', '').lower()  # TeamItem => team
 
 
-CSVDir = '/Users/juan/dumps/lyrically/'
+CSVDir = '/home/ubuntu/websemantic/lyrically'
 
 
 class MultiCSVItemPipeline(object):
